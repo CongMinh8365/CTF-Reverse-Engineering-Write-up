@@ -79,7 +79,7 @@ public final class SessionValidator {
     public static native String validateBrickToken(long j, long j2);
 }
 ```
-Ngay khi class được gọi, khối lệnh `static` sẽ chạy đầu tiên. Ở đây, tác giả không gọi tên thư viện một cách trực tiếp mà giấu nó dưới mảng số nguyên `iArr`, sau đó đem XOR từng phần tử với số `58`. Kết quả thu được chính là chuỗi `legocore`. Hệ thống sẽ gọi `System.loadLibrary("legocore")` để nạp file `liblegocore.so` vào bộ nhớ và gán biến `boolean a = true`. Tiếp theo là hàm xử lý chính. Lần này mảng `iArr` được XOR với key `92`. Đem giải mã, ta thu được chuỗi `syncBrickCache`. Đây là tên 1 hàm nhưng tác giả không gọi thẳng nó mà thay vào đó, tác giả sử dụng `Java Reflection (getDeclaredMethod().invoke())` để gọi một cách gián tiếp thông qua chuỗi string vừa giải mã.
+Ngay khi class được gọi, khối lệnh `static` sẽ chạy đầu tiên. Ở đây, tác giả không gọi tên thư viện một cách trực tiếp mà giấu nó dưới mảng số nguyên `iArr`, sau đó đem XOR từng phần tử với số `58`. Kết quả thu được chính là chuỗi `legocore`. Hệ thống sẽ gọi `System.loadLibrary("legocore")` để nạp file `liblegocore.so` vào bộ nhớ và gán biến `boolean a = true`. Đáng chú ý đây có bẫy **Lazy Load** cực kì khó chịu. File `liblegocore.so` sẽ ko tồn tại trong RAM ngay khi mở game, mà nó chỉ được nạp vào khi hệ thống gọi đến class `SessionValidator` khi người chơi đạt mốc 1 000 000 điểm ở hàm `FlagEngine.b` đã phân tích ở trên. Tiếp theo là hàm xử lý chính. Lần này mảng `iArr` được XOR với key `92`. Đem giải mã, ta thu được chuỗi `syncBrickCache`. Đây là tên 1 hàm nhưng tác giả không gọi thẳng nó mà thay vào đó, tác giả sử dụng `Java Reflection (getDeclaredMethod().invoke())` để gọi một cách gián tiếp thông qua chuỗi string vừa giải mã.
 
 Cuối cùng, ta nhìn thấy 3 khai báo hàm C/C++:
 ```java
@@ -87,9 +87,9 @@ public static native String refreshTileMap(long j, long j2);
 public static native String syncBrickCache(long j, long j2);
 public static native String validateBrickToken(long j, long j2);
 ```
-Ta thấy rằng để lấy được Flag, mục tiêu là phải gọi được hàm `syncBrickCache`. Hàm này yêu cầu truyền vào biến j là số điểm khổng lồ ta muốn ép vào hệ thống và biến j2 là mã xác thực tương ứng với số điểm j đó. Đây là cơ chế Anti-Cheat của game để đảm bảo người chơi không thể tùy ý sửa điểm bằng Memory Editor (như Cheat Engine) nếu không biết thuật toán mã hóa sinh ra token.
+Ta thấy rằng để lấy được Flag, mục tiêu là phải gọi được hàm `syncBrickCache`. Hàm này yêu cầu truyền vào biến `j` là số điểm khổng lồ ta muốn ép vào hệ thống và biến `j2` là mã xác thực tương ứng với số điểm `j` đó. Đây là cơ chế Anti-Cheat của game để đảm bảo người chơi không thể tùy ý sửa điểm bằng Memory Editor (như Cheat Engine) nếu không biết thuật toán mã hóa sinh ra token.
 
-Tuy nhiên, thuật toán để tính ra cái mã xác thực `j2` này, cũng như logic nhả cờ thực sự, hoàn toàn bị che giấu đằng sau từ khóa `native`. Theo cấu trúc chuẩn của một file APK, các thư viện native được biên dịch sẵn sẽ nằm trong thư mục `Resources`. Mở nó ra, đi vào thư mục `lib`, ta có thể thấy game hỗ trợ rất nhiều kiến trúc CPU khác nhau (arm64-v8a, armeabi-v7a, x86, x86_64). Vì ta chạy game trên giả lập NoxPlayer thường sử dụng x86_64, ta sẽ đi vào thư mục x86_64.
+Tuy nhiên, thuật toán để tính ra cái mã xác thực `j2` này, cũng như logic nhả cờ thực sự, hoàn toàn bị che giấu đằng sau từ khóa `native`. Theo cấu trúc chuẩn của một file APK, các thư viện native được biên dịch sẵn sẽ nằm trong thư mục `Resources`. Mở nó ra, đi vào thư mục `lib`, ta có thể thấy game hỗ trợ rất nhiều kiến trúc CPU khác nhau (arm64-v8a, armeabi-v7a, x86, x86_64). Vì ta chạy game trên giả lập NoxPlayer thường sử dụng x86_64, ta sẽ đi vào thư mục `x86_64`.
 
 Tại đây ta nhìn thấy file `liblegocore.so`. Dùng IDA mở file này lên, đi vào `JNI_Onload`, ta thấy đoạn code đã tiết lộ hai hành động chính của hệ thống:
 1. Giải mã động: Hàng loạt lệnh gọi hàm `sub_21000` được sử dụng để giải mã tên class (`SessionValidator`) và tên các hàm `native` ngay trong lúc chạy, nhằm qua mặt công cụ phân tích tĩnh.
@@ -265,15 +265,15 @@ _QWORD *__fastcall sub_21F60(_QWORD *a1)
   return a1;
 }
 ```
-Đây mới chính là hàm tạo Flag thật. Hàm này khởi tạo một mảng dài 41 bytes, bên trong nó là 4 vòng lặp `for/while` với các lệnh `if/else` nhảy loạn xạ giữa các hằng số -16657, 53374,... Hàm này đang sử dụng kĩ thuật **Control Flow Flattening**. Nó kết hợp với biến `dword_585F0` (chứa thời gian `clock_gettime` lấy từ `JNI_OnLoad`) để XOR và nhào nặn ra Flag thật. Cuối cùng, `sub_22110` lại được gọi để in Flag ra.
+Đây mới chính là hàm tạo Flag thật. Hàm này khởi tạo một mảng dài 41 bytes, bên trong nó là 4 vòng lặp `for/while` với các lệnh `if/else` nhảy loạn xạ giữa các hằng số -16657, 53374,... Đây là kĩ thuật **Control Flow Flattening**. Nó kết hợp với biến `dword_585F0` (chứa thời gian `clock_gettime` lấy từ `JNI_OnLoad`) để XOR và nhào nặn ra Flag thật. Cuối cùng, `sub_22110` lại được gọi để in Flag ra.
 
 # Hướng giải
-Do hàm `sub_21F60` phụ thuộc vào thời gian, ta không thể phân tích tĩnh được nữa. Ta sẽ sử dụng Frida phân tích động. Chiến thuật là ép Anti-Debug trả về 0 và ép chính hàm syncBrickCache (`sub_21F60`) tự động chạy để nhả Flag thật ra.
+Do hàm `sub_21F60` phụ thuộc vào thời gian, ta không thể phân tích tĩnh được nữa. Ta sẽ sử dụng Frida phân tích động. Chiến thuật là ép Anti-Debug trả về 0 và ép chính hàm `syncBrickCache` (`sub_21F60`) tự động chạy để nhả Flag thật ra.
 
 Chiến thuật cụ thể gồm 4 bước:
 
-**Bước 1: Giả lập thuật toán băm Checksum bằng Python**
-Trên Leaderboard, Top 1 đang có 1 nghìn tỷ điểm. Ta sẽ nã hẳn 1 triệu tỷ điểm vào hệ thống để đè bẹp Top 1. Tuy nhiên, ta không thể gửi điểm đó. Dựa vào thuật toán băm điểm số (hàm `d(double)`) ở class `FlagEngine` trên tầng Java, ta cần viết một script Python mô phỏng lại các phép tính này để lấy mã Checksum `j2` hợp lệ. Kết quả thu được là `4521136641424654587`.
+**Bước 1: Giả lập thuật toán băm Checksum**
+Trên Leaderboard, Top 1 đang có 1 nghìn tỷ điểm. Ta sẽ nã hẳn 1 triệu tỷ điểm vào hệ thống để đè bẹp Top 1. Tuy nhiên ta không thể gửi trực tiếp điểm đó. Dựa vào thuật toán băm điểm số (hàm `d(double)`) ở class `FlagEngine` trên tầng Java, ta cần viết một script Python mô phỏng lại các phép tính này để lấy mã Checksum `j2` hợp lệ. Kết quả thu được là `4521136641424654587`.
 ```python
 import struct
 
@@ -305,10 +305,10 @@ Quay lại class `SessionValidator`, game áp dụng Lazy Load: File `liblegocor
 **Bước 3: Vượt Anti-Debug**
 Một khi `liblegocore.so` đã nằm trong bộ nhớ, ta dùng Frida hook thẳng vào offset `0x21E80` (tọa độ hàm Anti-Debug `sub_21E80()` tìm được ở trên). Bằng cách ghi đè kết quả trả về `(retval.replace(ptr(0)))`, ta đánh lừa hệ thống rằng môi trường hoàn toàn sạch sẽ, không có dấu vết của Debugger.
 
-**Bước 4: Ép xung điểm số & Đoạt cờ**
-Cửa bảo mật đã mở. Ta dùng Frida gọi trực tiếp hàm native `syncBrickCache`, truyền vào số điểm 1 triệu tỷ và mã Checksum của nó `4521136641424654587`. Hệ thống C++ sẽ tự động chui vào `sub_21F60` và nhả cờ thật.
+**Bước 4: Ép điểm số & Đoạt cờ**
+Ta dùng Frida gọi trực tiếp hàm native `syncBrickCache`, truyền vào số điểm 1 triệu tỷ và mã Checksum của nó `4521136641424654587`. Hệ thống sẽ tự động chui vào `sub_21F60` và nhả cờ thật.
 
-### Script giải: [hook.js](./hook.js)**
+### Script giải: [hook.js](./hook.js)
 
 <img width="1001" height="435" alt="image" src="https://github.com/user-attachments/assets/14a6d93f-156d-433e-9995-c6251609a634" />
 
