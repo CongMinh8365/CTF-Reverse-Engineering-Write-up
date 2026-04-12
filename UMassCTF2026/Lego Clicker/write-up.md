@@ -298,7 +298,7 @@ def get_checksum(score):
         res -= 0x10000000000000000
     return res
 
-target_score = 1000000000000000 # 1 Triệu Tỷ (15 số 0)
+target_score = 1000000000000000 
 print(f"Mã Checksum (j2) cho {target_score} điểm: {get_checksum(target_score)}")
 ```
 **Bước 2: Cưỡng chế nạp thư viện (Bypass Lazy Load)**  
