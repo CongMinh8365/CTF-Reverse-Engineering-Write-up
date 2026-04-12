@@ -20,8 +20,8 @@ MA có vẻ là viết tắt cho MainActivity, do đó mục tiếp theo ta cầ
 
 - Hàm b(double d): Kiểm tra số điểm của người chơi và trả về các mốc level (1 đến 5).
 - Hàm c(int i): Gắn nhãn cho các level đó, tương ứng từ NOVICE (Tân binh) đến LEGEND (Huyền thoại).
-- Hàm e(int i): Một vòng lặp giải mã XOR cơ bản trên mảng byte tĩnh kLabelEnc.
 - Hàm d(double d): Thực hiện các phép toán Bitwise (XOR, Shift) phức tạp để băm (hash) điểm số.
+- Hàm e(int i): Một vòng lặp giải mã XOR cơ bản trên mảng byte tĩnh kLabelEnc.
 
 Đây khả năng cao là bẫy Fake Flag của tác giả! Bởi hãy nhìn lại vào hàm `b()`: Ngưỡng điểm cao nhất mà `FlagEngine` xử lý chỉ dừng lại ở 1.000.000 điểm, trong khi mục tiêu của ta là cần phải vượt qua 1 nghìn tỷ điểm của người đứng đầu. Nghĩa là hàm này chỉ phục vụ cho việc cấp rank và nhả cờ cho những người chơi ở đáy bảng xếp hạng.
 
