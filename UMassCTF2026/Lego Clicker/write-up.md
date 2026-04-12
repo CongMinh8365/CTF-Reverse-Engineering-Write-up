@@ -275,6 +275,7 @@ Do hàm `sub_21F60` phụ thuộc vào thời gian, ta không thể phân tích 
 Chiến thuật cụ thể gồm 4 bước:
 
 **Bước 1: Giả lập thuật toán băm Checksum**
+
 Trên Leaderboard, Top 1 đang có 1 nghìn tỷ điểm. Ta sẽ nã hẳn 1 triệu tỷ điểm vào hệ thống để đè bẹp Top 1. Tuy nhiên ta không thể gửi trực tiếp điểm đó. Dựa vào thuật toán băm điểm số (hàm `d(double)`) ở class `FlagEngine` trên tầng Java, ta cần viết một script Python mô phỏng lại các phép tính này để lấy mã Checksum `j2` hợp lệ. Kết quả thu được là `4521136641424654587`.
 ```python
 import struct
