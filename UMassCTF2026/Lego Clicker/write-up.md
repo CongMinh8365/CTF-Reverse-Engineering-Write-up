@@ -91,5 +91,178 @@ Ta thấy rằng để lấy được Flag, mục tiêu là phải gọi đượ
 
 Tuy nhiên, thuật toán để tính ra cái mã xác thực `j2` này, cũng như logic nhả cờ thực sự, hoàn toàn bị che giấu đằng sau từ khóa `native`. Theo cấu trúc chuẩn của một file APK, các thư viện native được biên dịch sẵn sẽ nằm trong thư mục `Resources`. Mở nó ra, đi vào thư mục `lib`, ta có thể thấy game hỗ trợ rất nhiều kiến trúc CPU khác nhau (arm64-v8a, armeabi-v7a, x86, x86_64). Vì ta chạy game trên giả lập NoxPlayer thường sử dụng x86_64, ta sẽ đi vào thư mục x86_64.
 
-Tại đây ta nhìn thấy file `liblegocore.so`. Sử dụng IDA để phân tích nó, ta có:
+Tại đây ta nhìn thấy file `liblegocore.so`. Dùng IDA mở file này lên, đi vào `JNI_Onload`, ta thấy đoạn code đã tiết lộ hai hành động chính của hệ thống:
+1. Giải mã động: Hàng loạt lệnh gọi hàm `sub_21000` được sử dụng để giải mã tên class (`SessionValidator`) và tên các hàm `native` ngay trong lúc chạy, nhằm qua mặt công cụ phân tích tĩnh.
+2. Dynamic Register: Nhìn vào dòng lệnh có chứa offset `1720LL`. Trong cấu trúc JNIEnv, index của hàm `RegisterNatives` là 215 (215 * 8 = 1720). Tác giả đã dùng lệnh này để ngầm liên kết 3 hàm native bên Java vào 3 hàm C++ vô danh: `sub_210F0`, `sub_21280`, và `sub_213B0`.
 
+Ta đi vào hàm đầu tiên `sub_210F0`:
+```C
+__int64 __fastcall sub_210F0(__int64 a1, __int64 a2, unsigned int a3, unsigned int a4)
+{
+
+........................... (khởi tạo các biến)
+
+  v17 = __readfsqword(0x28u);
+  if ( !(unsigned __int8)sub_21D40(a3) )
+  {
+    sub_21D60(&v14);
+    if ( (v14 & 1) != 0 )
+      v6 = v16;
+    else
+      v6 = v15;
+    goto LABEL_10;
+  }
+  sub_20FE0(a3 ^ a4);
+  if ( (unsigned __int8)sub_21E80() )
+  {
+    sub_21EA0(&v14);
+    if ( (v14 & 1) != 0 )
+      v6 = v16;
+    else
+      v6 = v15;
+LABEL_10:
+    result = (*(__int64 (__fastcall **)(__int64, _BYTE *))(*(_QWORD *)a1 + 1336LL))(a1, v6);
+    goto LABEL_15;
+  }
+  sub_21F60(&v14);
+  sub_22110(&v11, &v14);
+  if ( (v11 & 1) != 0 )
+    v7 = (char *)ptr;
+  else
+    v7 = &v12;
+  result = (*(__int64 (__fastcall **)(__int64, char *))(*(_QWORD *)a1 + 1336LL))(a1, v7);
+  if ( (v11 & 1) != 0 )
+  {
+    v9 = result;
+    operator delete(ptr);
+    result = v9;
+  }
+LABEL_15:
+  if ( (v14 & 1) != 0 )
+  {
+    v10 = result;
+    operator delete(v16);
+    return v10;
+  }
+  return result;
+}
+```
+Ngay khi bước vào hàm, tác giả có 1 lệnh kiểm tra `if ( !(unsigned __int8)sub_21D40(a3) )`. Nhìn vào hàm `sub_21D40`: `return ((a1 * (a1 + 1)) & 1) == 0;` ta phân tích 1 chút: Tích của hai số tự nhiên liên tiếp `a1 * (a1 + 1)` luôn luôn là một số chẵn. Một số chẵn khi đem AND với 1 thì chắc chắn bằng 0. Lệnh if lại có dấu ! đằng trước khiến code sẽ luôn trả về False => Cái nhánh if này vĩnh viễn không bao giờ được chạy. Hàm `sub_21D60` bên trong chỉ là **Dead Code**
+
+Tiếp theo là 1 lệnh kiểm tra nữa: `if ( (unsigned __int8)sub_21E80() )`. Đi vào hàm `sub_21E80` ta thấy:
+```C
+char sub_21E80()
+{
+  if ( (unsigned __int8)sub_22210() )
+    return 1;
+  else
+    return sub_223C0();
+}
+```
+Hàm này có lệnh rẽ nhánh để gọi 2 hàm khác nhau:
+- `sub_22210`: Hàm này dùng fopen đọc 1 file, sau đó dùng fgets đọc từng dòng và strncmp để tìm trường `TracerPid`. Nếu giá trị này khác 0, nghĩa là có người đang Debug app.
+- `sub_223C0`: Hàm này cũng dùng fopen đọc một file khác, rồi dùng `strstr` liên tục để lùng sục các từ khóa nhạy cảm. Nó đang tìm xem trong bộ nhớ có nạp các file .so của frida, xposed hay magisk không.
+
+Nếu 1 trong 2 hàm báo động, `sub_21E80` trả về 1 (True). Luồng thực thi lập tức gọi `sub_21EA0`. Nhìn vào `sub_21EA0`, ta thấy nó tạo ra một mảng dài 34 bytes bằng các phép XOR liên hoàn. Giải mã ra ta sẽ thu được cờ rác `BHREV{f4k3_fl4g_n1c3_try_d3bugger}`
+```C
+_QWORD *__fastcall sub_21EA0(_QWORD *a1)
+{
+  __int64 v2; // rax
+  char *v3; // rdi
+  char v4; // r8
+  unsigned __int64 i; // rcx
+  char *v6; // rax
+
+  v2 = operator new(0x28u);
+  a1[2] = v2;
+  *a1 = 41;
+  a1[1] = 34;
+  *(_OWORD *)(v2 + 16) = 0;
+  *(_OWORD *)v2 = 0;
+  *(_DWORD *)(v2 + 31) = 0;
+  v3 = (char *)&unk_1526F;
+  v4 = 0;
+  for ( i = 0; i != 34; ++i )
+  {
+    v6 = (char *)a1 + 1;
+    if ( (*(_BYTE *)a1 & 1) != 0 )
+      v6 = (char *)a1[2];
+    v6[i] = byte_15280[i] ^ v4 ^ v3[-7 * (i / 7)];
+    ++v3;
+    v4 += 29;
+  }
+  return a1;
+}
+```
+Từ đó ta có kết luận `sub_21E80()` chính là hàm Anti-debug. Nếu ta vượt qua bẫy Anti-debug này và đi xuống dưới, ta sẽ thấy hàm `sub_21F60`:
+```C
+_QWORD *__fastcall sub_21F60(_QWORD *a1)
+{
+  _OWORD *v1; // rax
+  __int64 i; // r14
+  unsigned __int16 j; // ax
+  int v4; // ecx
+  char *v5; // rcx
+  unsigned __int8 v7; // [rsp+1h] [rbp-29h]
+
+  v1 = (_OWORD *)operator new(0x30u);
+  a1[2] = v1;
+  *a1 = 49;
+  a1[1] = 41;
+  *(_OWORD *)((char *)v1 + 26) = 0;
+  v1[1] = 0;
+  *v1 = 0;
+  for ( i = 0; i != 41; ++i )
+  {
+    v7 = sub_20310((unsigned int)i);
+    for ( j = -8531; ; j = -12162 )
+    {
+      while ( 1 )
+      {
+        while ( 1 )
+        {
+          v4 = j;
+          j = -16657;
+          if ( v4 <= 53373 )
+            break;
+          if ( v4 == 53374 )
+          {
+            v7 ^= *((_BYTE *)&dword_585F0 + (i & 3));
+          }
+          else if ( v4 == 61453 )
+          {
+            v7 = qword_58590(v7, (unsigned int)i);
+            j = -21267;
+          }
+          else
+          {
+            v7 = qword_58578(v7, (unsigned int)i);
+            j = -16162;
+          }
+        }
+        if ( v4 <= 49373 )
+          break;
+        if ( v4 == 49374 )
+        {
+          v7 = qword_58580(v7, (unsigned int)i);
+          j = -13570;
+        }
+        else
+        {
+          v7 = qword_58588(v7, (unsigned int)i);
+          j = -4083;
+        }
+      }
+      if ( v4 != 44269 )
+        break;
+      v7 = qword_58598(v7, (unsigned int)i);
+    }
+    v5 = (char *)a1 + 1;
+    if ( (*(_BYTE *)a1 & 1) != 0 )
+      v5 = (char *)a1[2];
+    v5[i] = v7;
+  }
+  return a1;
+}
+```
+Đây chính là hàm tạo Flag thật. Hàm này khởi tạo một mảng dài 41 bytes, bên trong nó là 4 vòng lặp `for/while` với các lệnh `if/else` nhảy loạn xạ giữa các hằng số -16657, 53374,... Hàm này đang sử dụng kĩ thuật **Control Flow Flattening**. Nó kết hợp với biến `dword_585F0` (chứa thời gian `clock_gettime` lấy từ `JNI_OnLoad`) để XOR và nhào nặn ra Flag thật. Cuối cùng, `sub_22110` lại được gọi để in Flag ra.
