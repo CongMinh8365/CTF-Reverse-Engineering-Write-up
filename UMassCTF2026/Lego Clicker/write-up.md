@@ -79,7 +79,9 @@ public final class SessionValidator {
     public static native String validateBrickToken(long j, long j2);
 }
 ```
-Ngay khi class được gọi, khối lệnh `static` sẽ chạy đầu tiên. Ở đây, tác giả không gọi tên thư viện một cách trực tiếp mà giấu nó dưới mảng số nguyên `iArr`, sau đó đem XOR từng phần tử với số `58`. Kết quả thu được chính là chuỗi `legocore`. Hệ thống sẽ gọi `System.loadLibrary("legocore")` để nạp file `liblegocore.so` vào bộ nhớ và gán biến `boolean a = true`. Đáng chú ý đây có bẫy **Lazy Load** cực kì khó chịu. File `liblegocore.so` sẽ ko tồn tại trong RAM ngay khi mở game, mà nó chỉ được nạp vào khi hệ thống gọi đến class `SessionValidator` khi người chơi đạt mốc 1.000.000 điểm ở hàm `FlagEngine.b` đã phân tích ở trên. Tiếp theo là hàm xử lý chính. Lần này mảng `iArr` được XOR với key `92`. Đem giải mã, ta thu được chuỗi `syncBrickCache`. Đây là tên 1 hàm nhưng tác giả không gọi thẳng nó mà thay vào đó, tác giả sử dụng `Java Reflection (getDeclaredMethod().invoke())` để gọi một cách gián tiếp thông qua chuỗi string vừa giải mã.
+Ngay khi class được gọi, khối lệnh `static` sẽ chạy đầu tiên. Ở đây, tác giả không gọi tên thư viện một cách trực tiếp mà giấu nó dưới mảng số nguyên `iArr`, sau đó đem XOR từng phần tử với số `58`. Kết quả thu được chính là chuỗi `legocore`. Hệ thống sẽ gọi `System.loadLibrary("legocore")` để nạp file `liblegocore.so` vào bộ nhớ và gán biến `boolean a = true`. Đáng chú ý đây có bẫy **Lazy Load** cực kì khó chịu. File `liblegocore.so` sẽ ko tồn tại trong RAM ngay khi mở game, mà nó chỉ được nạp vào khi hệ thống gọi đến class `SessionValidator` khi người chơi đạt mốc 1.000.000 điểm ở hàm `FlagEngine.b`. 
+
+Tiếp theo là hàm xử lý chính. Lần này mảng `iArr` được XOR với key `92`. Đem giải mã, ta thu được chuỗi `syncBrickCache`. Đây là tên 1 hàm nhưng tác giả không gọi thẳng nó mà thay vào đó, tác giả sử dụng `Java Reflection (getDeclaredMethod().invoke())` để gọi một cách gián tiếp thông qua chuỗi string vừa giải mã.
 
 Cuối cùng, ta nhìn thấy 3 khai báo hàm C/C++:
 ```java
