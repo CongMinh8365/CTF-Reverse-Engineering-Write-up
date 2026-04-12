@@ -274,8 +274,7 @@ Do hàm `sub_21F60` phụ thuộc vào thời gian, ta không thể phân tích 
 
 Chiến thuật cụ thể gồm 4 bước:
 
-**Bước 1: Giả lập thuật toán băm Checksum**
-
+**Bước 1: Giả lập thuật toán băm Checksum**  
 Trên Leaderboard, Top 1 đang có 1 nghìn tỷ điểm. Ta sẽ nã hẳn 1 triệu tỷ điểm vào hệ thống để đè bẹp Top 1. Tuy nhiên ta không thể gửi trực tiếp điểm đó. Dựa vào thuật toán băm điểm số (hàm `d(double)`) ở class `FlagEngine` trên tầng Java, ta cần viết một script Python mô phỏng lại các phép tính này để lấy mã Checksum `j2` hợp lệ. Kết quả thu được là `4521136641424654587`.
 ```python
 import struct
@@ -302,13 +301,13 @@ def get_checksum(score):
 target_score = 1000000000000000 # 1 Triệu Tỷ (15 số 0)
 print(f"Mã Checksum (j2) cho {target_score} điểm: {get_checksum(target_score)}")
 ```
-**Bước 2: Cưỡng chế nạp thư viện (Bypass Lazy Load)**
+**Bước 2: Cưỡng chế nạp thư viện (Bypass Lazy Load)**  
 Quay lại class `SessionValidator`, game áp dụng Lazy Load: File `liblegocore.so` chỉ được nạp vào RAM khi class này được khởi tạo. Nếu thư viện chưa được nạp, Frida sẽ không thể tìm thấy offset để hook. Ta phải dùng lệnh `Class.forName (Java Reflection)` trong Frida để ép máy ảo Android chạy khối lệnh `static` và nạp file `.so` ngay lập tức.
 
-**Bước 3: Vượt Anti-Debug**
+**Bước 3: Vượt Anti-Debug**  
 Một khi `liblegocore.so` đã nằm trong bộ nhớ, ta dùng Frida hook thẳng vào offset `0x21E80` (tọa độ hàm Anti-Debug `sub_21E80()` tìm được ở trên). Bằng cách ghi đè kết quả trả về `(retval.replace(ptr(0)))`, ta đánh lừa hệ thống rằng môi trường hoàn toàn sạch sẽ, không có dấu vết của Debugger.
 
-**Bước 4: Ép điểm số & Đoạt cờ**
+**Bước 4: Ép điểm số & Đoạt cờ**  
 Ta dùng Frida gọi trực tiếp hàm native `syncBrickCache`, truyền vào số điểm 1 triệu tỷ và mã Checksum của nó `4521136641424654587`. Hệ thống sẽ tự động chui vào `sub_21F60` và nhả cờ thật.
 
 ### Script giải: [hook.js](./hook.js)
