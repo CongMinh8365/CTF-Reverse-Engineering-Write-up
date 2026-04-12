@@ -310,3 +310,6 @@ Cửa bảo mật đã mở. Ta dùng Frida gọi trực tiếp hàm native `syn
 
 **Script giải: [hook.js](./hook.js)**
 
+<img width="1001" height="435" alt="image" src="https://github.com/user-attachments/assets/14a6d93f-156d-433e-9995-c6251609a634" />
+
+## FLAG: UMASS{br1ck_by_br1ck_y0u_r3ach3d_th3_t0p}
