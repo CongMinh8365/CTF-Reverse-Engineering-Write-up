@@ -265,4 +265,47 @@ _QWORD *__fastcall sub_21F60(_QWORD *a1)
   return a1;
 }
 ```
-Đây chính là hàm tạo Flag thật. Hàm này khởi tạo một mảng dài 41 bytes, bên trong nó là 4 vòng lặp `for/while` với các lệnh `if/else` nhảy loạn xạ giữa các hằng số -16657, 53374,... Hàm này đang sử dụng kĩ thuật **Control Flow Flattening**. Nó kết hợp với biến `dword_585F0` (chứa thời gian `clock_gettime` lấy từ `JNI_OnLoad`) để XOR và nhào nặn ra Flag thật. Cuối cùng, `sub_22110` lại được gọi để in Flag ra.
+Đây mới chính là hàm tạo Flag thật. Hàm này khởi tạo một mảng dài 41 bytes, bên trong nó là 4 vòng lặp `for/while` với các lệnh `if/else` nhảy loạn xạ giữa các hằng số -16657, 53374,... Hàm này đang sử dụng kĩ thuật **Control Flow Flattening**. Nó kết hợp với biến `dword_585F0` (chứa thời gian `clock_gettime` lấy từ `JNI_OnLoad`) để XOR và nhào nặn ra Flag thật. Cuối cùng, `sub_22110` lại được gọi để in Flag ra.
+
+# Hướng giải
+Do hàm `sub_21F60` phụ thuộc vào thời gian, ta không thể phân tích tĩnh được nữa. Ta sẽ sử dụng Frida phân tích động. Chiến thuật là ép Anti-Debug trả về 0 và ép chính hàm syncBrickCache (`sub_21F60`) tự động chạy để nhả Flag thật ra.
+
+Chiến thuật cụ thể gồm 4 bước:
+
+**Bước 1: Giả lập thuật toán băm Checksum bằng Python**
+Trên Leaderboard, Top 1 đang có 1 nghìn tỷ điểm. Ta sẽ nã hẳn 1 triệu tỷ điểm vào hệ thống để đè bẹp Top 1. Tuy nhiên, ta không thể gửi điểm đó. Dựa vào thuật toán băm điểm số (hàm `d(double)`) ở class `FlagEngine` trên tầng Java, ta cần viết một script Python mô phỏng lại các phép tính này để lấy mã Checksum `j2` hợp lệ. Kết quả thu được là `4521136641424654587`.
+```python
+import struct
+
+def double_to_raw_long_bits(d):
+    return struct.unpack('Q', struct.pack('d', d))[0]
+
+def get_checksum(score):
+    kTierBlob = [68576273936416768, 33514703552512, 167772160000, 1048576000, 0]
+    jDoubleToRawLongBits = double_to_raw_long_bits(score)
+    
+    index = int(4 & jDoubleToRawLongBits)
+    j = jDoubleToRawLongBits ^ kTierBlob[index]
+    
+    j2 = (j ^ (j >> 30)) * (-4658895280553007687 & 0xFFFFFFFFFFFFFFFF)
+    j2 &= 0xFFFFFFFFFFFFFFFF
+    
+    # Ép kiểu về số nguyên có dấu 64-bit chuẩn Java
+    res = j2 ^ (j2 >> 31)
+    if res & 0x8000000000000000:
+        res -= 0x10000000000000000
+    return res
+
+target_score = 1000000000000000 # 1 Triệu Tỷ (15 số 0)
+print(f"Mã Checksum (j2) cho {target_score} điểm: {get_checksum(target_score)}")
+```
+**Bước 2: Cưỡng chế nạp thư viện (Bypass Lazy Load)**
+Quay lại class `SessionValidator`, game áp dụng Lazy Load: File `liblegocore.so` chỉ được nạp vào RAM khi class này được khởi tạo. Nếu thư viện chưa được nạp, Frida sẽ không thể tìm thấy offset để hook. Ta phải dùng lệnh `Class.forName (Java Reflection)` trong Frida để ép máy ảo Android chạy khối lệnh `static` và nạp file `.so` ngay lập tức.
+
+**Bước 3: Vượt Anti-Debug**
+Một khi `liblegocore.so` đã nằm trong bộ nhớ, ta dùng Frida hook thẳng vào offset `0x21E80` (tọa độ hàm Anti-Debug `sub_21E80()` tìm được ở trên). Bằng cách ghi đè kết quả trả về `(retval.replace(ptr(0)))`, ta đánh lừa hệ thống rằng môi trường hoàn toàn sạch sẽ, không có dấu vết của Debugger.
+
+**Bước 4: Ép xung điểm số & Đoạt cờ**
+Cửa bảo mật đã mở. Ta dùng Frida gọi trực tiếp hàm native `syncBrickCache`, truyền vào số điểm 1 triệu tỷ và mã Checksum của nó `4521136641424654587`. Hệ thống C++ sẽ tự động chui vào `sub_21F60` và nhả cờ thật.
+
+** Script giải: 
