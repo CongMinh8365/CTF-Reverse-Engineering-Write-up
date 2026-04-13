@@ -89,13 +89,13 @@ public static native String refreshTileMap(long j, long j2);
 public static native String syncBrickCache(long j, long j2);
 public static native String validateBrickToken(long j, long j2);
 ```
-Ta thấy rằng để lấy được Flag, mục tiêu là phải gọi được hàm `syncBrickCache`. Hàm này yêu cầu truyền vào biến `j` là số điểm khổng lồ ta muốn ép vào hệ thống và biến `j2` là mã xác thực tương ứng với số điểm `j` đó. Đây là cơ chế Anti-Cheat của game: Tầng Java sẽ băm điểm số thành token `j2` rồi gửi xuống, hệ thống C bên dưới sẽ kiểm chứng lại để đảm bảo người chơi không tùy ý sửa điểm bằng Memory Editor (như Cheat Engine).
+Ta thấy rằng để lấy được Flag, mục tiêu là phải gọi được hàm `syncBrickCache`. Hàm này yêu cầu truyền vào biến `j` là số điểm khổng lồ ta muốn ép vào hệ thống và biến `j2` là mã xác thực tương ứng với số điểm `j` đó. Đây là cơ chế Anti-Cheat của game: Tầng Java sẽ băm điểm số thành token `j2` rồi gửi xuống, hệ thống C/C++ bên dưới sẽ kiểm chứng lại để đảm bảo người chơi không tùy ý sửa điểm bằng Memory Editor (như Cheat Engine).
 
 Tuy nhiên, thuật toán kiểm chứng tính hợp lệ của cặp `(j, j2)` này, cũng như logic tạo ra Flag thật, hoàn toàn bị che giấu đằng sau từ khóa `native`. Theo cấu trúc chuẩn của một file APK, các thư viện native được biên dịch sẵn sẽ nằm trong thư mục `Resources`. Mở nó ra, đi vào thư mục `lib`, ta có thể thấy game hỗ trợ rất nhiều kiến trúc CPU khác nhau (arm64-v8a, armeabi-v7a, x86, x86_64). Vì ta chạy game trên giả lập NoxPlayer thường sử dụng x86_64, ta sẽ đi vào thư mục `x86_64`.
 
 Tại đây ta nhìn thấy file `liblegocore.so`. Dùng IDA mở file này lên, đi vào hàm [JNI_Onload](./JNI_Onload.c), ta thấy đoạn code đã tiết lộ 2 hành động chính của hệ thống:
 1. Giải mã động: Hàng loạt lệnh gọi hàm `sub_21000` được sử dụng để giải mã tên class (`SessionValidator`) và tên các hàm `native` ngay trong lúc chạy, nhằm qua mặt công cụ phân tích tĩnh.
-2. Dynamic Register: Nhìn vào dòng lệnh có chứa offset `1720LL`. Trong cấu trúc JNIEnv, index của hàm `RegisterNatives` là 215 (215 * 8 = 1720). Tác giả đã dùng lệnh này để ngầm liên kết 3 hàm native bên Java vào 3 hàm C++ vô danh: `sub_210F0`, `sub_21280`, và `sub_213B0`.
+2. Dynamic Register: Nhìn vào dòng lệnh có chứa offset `1720LL`. Trong cấu trúc JNIEnv, index của hàm `RegisterNatives` là 215 (215 * 8 = 1720). Tác giả đã dùng lệnh này để ngầm liên kết 3 hàm native bên Java vào 3 hàm C/C++ vô danh: `sub_210F0`, `sub_21280`, và `sub_213B0`.
 
 Ta đi vào hàm đầu tiên `sub_210F0`:
 ```C
@@ -270,7 +270,7 @@ _QWORD *__fastcall sub_21F60(_QWORD *a1)
 Đây mới chính là hàm tạo Flag thật. Hàm này khởi tạo một mảng dài 41 bytes, bên trong nó là 4 vòng lặp `for/while` với các lệnh `if/else` nhảy loạn xạ giữa các hằng số -16657, 53374,... Đây là kĩ thuật **Control Flow Flattening**. Nó kết hợp với biến `dword_585F0` (chứa thời gian `clock_gettime` lấy từ `JNI_OnLoad`) để XOR và nhào nặn ra Flag thật. Cuối cùng, `sub_22110` lại được gọi để in Flag ra.
 
 # Hướng giải
-Do hàm `sub_21F60` phụ thuộc vào thời gian, ta không thể phân tích tĩnh được nữa. Ta sẽ sử dụng Frida phân tích động. Chiến thuật là ép Anti-Debug trả về 0 và ép chính hàm `syncBrickCache` (`sub_21F60`) tự động chạy để nhả Flag thật ra.
+Do hàm `sub_21F60` phụ thuộc vào thời gian, ta không thể phân tích tĩnh được nữa (thật ra là không phát hiện ra biến thời gian về sau bị triệt tiêu =))). Ta sẽ sử dụng Frida phân tích động. Chiến thuật là ép Anti-Debug trả về 0 và ép chính hàm `syncBrickCache` (`sub_21F60`) tự động chạy để nhả Flag thật ra.
 
 Chiến thuật cụ thể gồm 4 bước:
 
