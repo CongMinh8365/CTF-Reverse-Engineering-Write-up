@@ -308,7 +308,7 @@ Quay lại class `SessionValidator`, game áp dụng Lazy Load: File `liblegocor
 Một khi `liblegocore.so` đã nằm trong bộ nhớ, ta dùng Frida hook thẳng vào offset `0x21E80` (tọa độ hàm Anti-Debug `sub_21E80()` tìm được ở trên). Bằng cách ghi đè kết quả trả về `(retval.replace(ptr(0)))`, ta đánh lừa hệ thống rằng môi trường hoàn toàn sạch sẽ, không có dấu vết của Debugger.
 
 **Bước 4: Ép điểm số & Đoạt cờ**  
-Ta dùng Frida gọi trực tiếp hàm native `syncBrickCache`, truyền vào số điểm 1 triệu tỷ và mã Checksum của nó `4521136641424654587`. Hệ thống sẽ tự động chui vào `sub_21F60` và nhả cờ thật.
+Ta dùng Frida gọi trực tiếp hàm native `syncBrickCache`, truyền vào số điểm 1 triệu tỷ và mã Checksum của nó `4521136641424654587`. Hệ thống sẽ tự động chui vào và nhả cờ thật.
 
 ### Script giải: [hook.js](./hook.js)
 
