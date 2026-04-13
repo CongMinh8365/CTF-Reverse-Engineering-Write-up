@@ -89,9 +89,9 @@ public static native String refreshTileMap(long j, long j2);
 public static native String syncBrickCache(long j, long j2);
 public static native String validateBrickToken(long j, long j2);
 ```
-Ta thấy rằng để lấy được Flag, mục tiêu là phải gọi được hàm `syncBrickCache`. Hàm này yêu cầu truyền vào biến `j` là số điểm khổng lồ ta muốn ép vào hệ thống và biến `j2` là mã xác thực tương ứng với số điểm `j` đó. Đây là cơ chế Anti-Cheat của game để đảm bảo người chơi không thể tùy ý sửa điểm bằng Memory Editor (như Cheat Engine) nếu không biết thuật toán mã hóa sinh ra token.
+Ta thấy rằng để lấy được Flag, mục tiêu là phải gọi được hàm `syncBrickCache`. Hàm này yêu cầu truyền vào biến `j` là số điểm khổng lồ ta muốn ép vào hệ thống và biến `j2` là mã xác thực tương ứng với số điểm `j` đó. Đây là cơ chế Anti-Cheat của game: Tầng Java sẽ băm điểm số thành token `j2` rồi gửi xuống, hệ thống C bên dưới sẽ kiểm chứng lại để đảm bảo người chơi không tùy ý sửa điểm bằng Memory Editor (như Cheat Engine).
 
-Tuy nhiên, thuật toán để tính ra cái mã xác thực `j2` này, cũng như logic nhả cờ thực sự, hoàn toàn bị che giấu đằng sau từ khóa `native`. Theo cấu trúc chuẩn của một file APK, các thư viện native được biên dịch sẵn sẽ nằm trong thư mục `Resources`. Mở nó ra, đi vào thư mục `lib`, ta có thể thấy game hỗ trợ rất nhiều kiến trúc CPU khác nhau (arm64-v8a, armeabi-v7a, x86, x86_64). Vì ta chạy game trên giả lập NoxPlayer thường sử dụng x86_64, ta sẽ đi vào thư mục `x86_64`.
+Tuy nhiên, thuật toán kiểm chứng tính hợp lệ của cặp `(j, j2)` này, cũng như logic tạo ra Flag thật, hoàn toàn bị che giấu đằng sau từ khóa `native`. Theo cấu trúc chuẩn của một file APK, các thư viện native được biên dịch sẵn sẽ nằm trong thư mục `Resources`. Mở nó ra, đi vào thư mục `lib`, ta có thể thấy game hỗ trợ rất nhiều kiến trúc CPU khác nhau (arm64-v8a, armeabi-v7a, x86, x86_64). Vì ta chạy game trên giả lập NoxPlayer thường sử dụng x86_64, ta sẽ đi vào thư mục `x86_64`.
 
 Tại đây ta nhìn thấy file `liblegocore.so`. Dùng IDA mở file này lên, đi vào hàm [JNI_Onload](./JNI_Onload.c), ta thấy đoạn code đã tiết lộ 2 hành động chính của hệ thống:
 1. Giải mã động: Hàng loạt lệnh gọi hàm `sub_21000` được sử dụng để giải mã tên class (`SessionValidator`) và tên các hàm `native` ngay trong lúc chạy, nhằm qua mặt công cụ phân tích tĩnh.
