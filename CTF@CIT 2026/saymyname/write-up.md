@@ -5,6 +5,6 @@
 
 <img width="1366" height="225" alt="image" src="https://github.com/user-attachments/assets/7718cd1f-db80-4588-91fd-ceaf9ebc3ebb" />
 
-Để ý dòng `yeah that me. heres your flag CIT{Zn583Umnwd4S}` có format flag, submit thử thì thấy hệ thống báo Correct
+Để ý dòng `yeah that me. heres your flag CIT{Zn583Umnwd4S}` có format flag, submit thử thì thấy hệ thống báo Correct (bài bựa =))) 
 
 ## Flag: CIT{Zn583Umnwd4S}
