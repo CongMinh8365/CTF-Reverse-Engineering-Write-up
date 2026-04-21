@@ -129,4 +129,76 @@ Hàm `main` đơn giản là 1 bộ điều phối lệnh, nó kiểm tra số t
 [svc/01] Mirror first. Then hush.
 [power/06] Bridge emergency battery before maintenance work or the speaker amp browns out.
 ```
-Dịch nghĩa ra, ta hiểu rằng để đạt trạng thái đúng, ta cần phải làm cho đèn tắt, cửa thông gió ở phía đông, camera bus đạt số 3, door patch 2 lần, chạy lệnh `mirror` trước `hush` sau, và bật pin lên. Tiếp theo là các hàm `toggleLights`, `cycleVentRoute`, `rotateCameraBus`, `applyDoorPatch`, `toggleBatteryBridge` đơn giản chỉ là các hàm thay đổi trạng thái của các thiết bị trên. Ta sẽ check hàm số 7 `maintenanceConsole`
+Dịch nghĩa ra, ta hiểu rằng để đạt trạng thái đúng, ta cần phải làm cho đèn tắt, cửa thông gió ở phía đông, camera bus đạt số 3, door patch 2 lần, chạy lệnh `mirror` trước `hush` sau, và bật pin lên.    
+Tiếp theo là các hàm `toggleLights`, `cycleVentRoute`, `rotateCameraBus`, `applyDoorPatch`, `toggleBatteryBridge` đơn giản chỉ là các hàm thay đổi trạng thái của các thiết bị trên. Ta sẽ đi check hàm số 7 `maintenanceConsole`. Nhìn vào điều kiện khi chạy lệnh `mirror`:
+```C
+else if ( (unsigned __int8)std::operator==<char>(v10, "mirror") )
+      {
+        if ( dword_5D90E8 == 3 )
+        {
+          byte_5D90F1 = 1;
+          std::operator<<<std::char_traits<char>>(
+            (std::ostream *)&std::cout,
+            (__int64)"[svc] mirror relay aligned. inspection mode enabled.\n");
+        }
+        else
+        {
+          std::operator<<<std::char_traits<char>>(
+            (std::ostream *)&std::cout,
+            (__int64)"[svc] mirror relay unreachable from current camera bus.\n");
+        }
+      }
+```
+Ta thấy rằng nếu lệnh kiểm tra `dword_5D90E8 == 3` sai thì nó sẽ in ra dòng chữ `[svc] mirror relay unreachable from current camera bus.` Điều này có nghĩa là camera bus phải bằng 3 trước khi chạy lệnh `mirror`. Tương tự nhìn vào điều kiện chạy lệnh `hush`:
+```C
+else if ( (unsigned __int8)std::operator==<char>(v10, "hush") )
+      {
+        if ( byte_5D90F0 != 1 )
+        {
+          std::operator<<<std::char_traits<char>>(
+            (std::ostream *)&std::cout,
+            (__int64)"[svc] hush rejected: bridge the emergency battery first.\n");
+        }
+        else if ( g_state )
+        {
+          std::operator<<<std::char_traits<char>>(
+            (std::ostream *)&std::cout,
+            (__int64)"[svc] hush rejected: corridor glare is saturating the speaker sensor.\n");
+        }
+        else if ( dword_5D90E4 == 1 )
+        {
+          if ( byte_5D90F1 != 1 )
+          {
+            std::operator<<<std::char_traits<char>>(
+              (std::ostream *)&std::cout,
+              (__int64)"[svc] hush rejected: mirror relay not armed.\n");
+          }
+          else
+          {
+            byte_5D90F2 = 1;
+            std::operator<<<std::char_traits<char>>((std::ostream *)&std::cout, (__int64)"[svc] alarm speaker muted.\n");
+          }
+        }
+        else
+        {
+          std::operator<<<std::char_traits<char>>(
+            (std::ostream *)&std::cout,
+            (__int64)"[svc] hush rejected: airflow noise too high on current vent route.\n");
+        }
+      }
+```
+Ta hiểu rằng để chạy được lệnh `hush` ta cần phải setup trước emergency battery, lights OFF, mirror READY và east bypass. Gom hết các điều kiện trên lại, ta thu được cách đạt trạng thái đúng yêu cầu đề bài như sau:
+```
+(1) lights OFF, east bypass, camera bus 3, door patch 2 times, battery ENGAGED
+(2) mirror READY
+(3) hush => alarm muted
+
+=> Thứ tự bấm: 2 -> 3 -> 4 (3 lần) -> 5 (2 lần) -> 6 -> 7 -> Gõ `mirror` -> Gõ `hush` -> back
+```
+Sau khi bấm xong ta chọn `9` để check thử status:
+
+<img width="333" height="169" alt="image" src="https://github.com/user-attachments/assets/7d0f341e-40ea-4cce-b76e-b46e63449996" />
+
+Ta đã thành công đưa về đúng trạng thái. 
+
+
