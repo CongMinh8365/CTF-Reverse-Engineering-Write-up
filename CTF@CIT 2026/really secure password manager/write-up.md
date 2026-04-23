@@ -313,9 +313,9 @@ Vậy là giờ phân tích tĩnh đã vô tác dụng, ta phải chuyển sang 
 <img width="1366" height="218" alt="image" src="https://github.com/user-attachments/assets/a8f34d23-36a6-4286-a95e-ed088925d615" />
 &nbsp;
 
-Chuỗi `hehe` ta nhập vào sau thuật toán hash sẽ sinh ra chuỗi 16 kí tự `NGOr380gHmDeVod7`, sau khí bị vứt sang 1 góc. Tiếp theo chương trình tìm username `doanminh` để kiểm tra tính xác thực (khả năng là `notronnie` nhưng ta đã bypass rồi), sau đó tìm đến thư mục `home/doanminh` và tìm kiếm file `.pm_token` có nội dung là `notronnie_local_token_v1` để tiếp tục xác thực hoặc giải mã gì đó tiếp. Sau đó là 3 ảnh kế tiếp cho ta thấy sự xuất hiện của 1 chuỗi lạ `b7Cvv$K@(6OFGHNR`, chuỗi `NGOr380gHmDeVod7` xuất hiện trở lại và dòng thông báo lỗi `ERROR_NOT_AUTHENTICATED`. Cuối cùng là in ra thông báo lỗi trong menu.
+Chuỗi `hehe` ta nhập vào sau thuật toán hash sẽ sinh ra chuỗi 16 kí tự `NGOr380gHmDeVod7`, sau đó bị vứt sang 1 góc. Tiếp theo chương trình tìm username `doanminh` để kiểm tra tính xác thực (khả năng là `notronnie` nhưng ta đã bypass rồi), sau đó tìm đến thư mục `home/doanminh` và tìm kiếm file `.pm_token` có nội dung là `notronnie_local_token_v1` để tiếp tục xác thực hoặc giải mã gì đó tiếp. Sau đó là 3 ảnh kế tiếp cho ta thấy sự xuất hiện của 1 chuỗi lạ `b7Cvv$K@(6OFGHNR`, chuỗi `NGOr380gHmDeVod7` từ input `hehe` và dòng thông báo lỗi `ERROR_NOT_AUTHENTICATED`. Cuối cùng là in ra thông báo lỗi trong menu.
 
-Điều này có nghĩa là gì? Khả năng cao đây là 1 phép so sánh chuỗi, với chuỗi `b7Cvv$K@(6OFGHNR` đã được hardcode trong hệ thống ngay từ đầu, và giờ nó bỏ ra để so sánh với chuỗi hash của ta. Nếu là thật thì mọi thứ đã quá rõ ràng, bước tiếp theo ta chỉ cần thay đổi lại nội dung chuỗi `NGOr380gHmDeVod7` thành `b7Cvv$K@(6OFGHNR` là sẽ vượt qua được.
+Hãy để ý vào 3 ảnh đó. Điều này có nghĩa là gì? Khả năng cao đây là 1 phép so sánh chuỗi, với chuỗi `b7Cvv$K@(6OFGHNR` đã được hardcode trong hệ thống ngay từ đầu, và giờ nó bỏ ra để so sánh với chuỗi hash của ta. Nếu là thật thì đến đây đã quá dễ dàng, bước tiếp theo ta chỉ cần patch chuỗi `NGOr380gHmDeVod7` thành `b7Cvv$K@(6OFGHNR` là sẽ vượt qua được.
 
 ## Bypass VM Dispatcher
 Ta sẽ chạy lại chương trình từ đầu, nhập `hehe` vào account name, và khi xuất hiện chuỗi hash của nó, ta sẽ đổi thành `b7Cvv$K@(6OFGHNR`:
