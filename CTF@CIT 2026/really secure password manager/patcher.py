@@ -1,14 +1,12 @@
-#!/usr/bin/env python3
 import sys
 
-# Offset này tìm được bằng cách soi trong IDA hoặc dùng lệnh grep trên file Hex
 USERNAME_OFF = 0x19D29C 
 ORIGINAL = b"notronnie\x00"
 
 def main():
     input_binary = "reallysecurepasswordmanager"
     output_binary = "rspm_patched"
-    my_username = "doanminh" # Tên thật trên máy ông
+    my_username = "doanminh"
 
     username_bytes = my_username.encode("ascii")
     
@@ -24,7 +22,7 @@ def main():
     with open(output_binary, "wb") as f:
         f.write(data)
     
-    print(f"[+] Đã vá thành công! Chạy file {output_binary} nhé.")
+    print(f"[+] Đã vá thành công! File mới: {output_binary}")
 
 if __name__ == "__main__":
     main()
