@@ -267,4 +267,40 @@ def main():
 if __name__ == "__main__":
     main()
 ```
-Chạy scripts trên, ta thu được file patched là [rspm_patched](./rspm_patched)
+Chạy scripts trên, ta thu được file patched là [rspm_patched](./rspm_patched)   
+Ta sẽ check thử xem đã thuận lợi vượt qua `login` chưa:
+
+<img width="1349" height="368" alt="image" src="https://github.com/user-attachments/assets/8d701085-a0f7-4654-92df-e80850e7a48a" />
+
+OK đã thành công!
+
+## Phân tích tập lệnh bị ẩn giấu
+Sử dụng GDB mở file patched lên, đặt breakpoint vào lệnh `__asm { jmp     qword ptr [rax]` và chạy thử (nhập bừa account name là `hehe`), ta thu được:
+
+<img width="1366" height="505" alt="image" src="https://github.com/user-attachments/assets/b1b18774-eb9f-4cf9-b435-1be4aeeaa2bf" />
+
+Ta thấy từ lệnh đó sẽ nhảy đến 1 lệnh `jmp` nữa rồi mới đến luồng thực thi chính bắt đầu từ `mov r13, rbp` ở địa chỉ `0xa878eb`. Sử dụng lệnh `vmmap` quét vùng nhớ:
+
+<img width="880" height="279" alt="image" src="https://github.com/user-attachments/assets/f39048f9-18da-4f35-aa45-4ecca5fd8108" />
+
+Ta biết rằng luồng thực thi này nằm trọn vẹn trong vùng nhớ từ `0xa80000` đến `0xb48000` với đầy đủ 4 quyền `rwxp`. Khả năng cao luồng thực thi này chỉ được giải mã ra khi ta bypass được username. Tiếp theo ta sẽ dump vùng nhớ này ra và dùng IDA decompile để đọc hiểu logic của nó:
+
+<img width="1093" height="299" alt="image" src="https://github.com/user-attachments/assets/94f6bdec-072d-46a6-bdf6-e5fbb4cd294f" />
+
+Thật bất ngờ là đoạn code chỉ ngắn tí tẹo. Và khi phân tích kĩ càng (thực ra là đáp cho AI), ta phát hiện ra rằng đây là một VM Dispatcher. Và còn tệ hơn nữa là tác giả đã băm nát logic thành hàng ngàn vi lệnh. Đoạn code này đóng vai trò như trái tim của hệ thống, thực hiện một vòng lặp vô tận theo đúng chu trình chuẩn của CPU:
+- Đọc mã lệnh ảo (Opcode) từ bộ nhớ
+- Tính toán kích thước lệnh và tịnh tiến con trỏ lệnh ảo (Virtual Instruction Pointer)
+- Nhảy đến khối lệnh xử lý (Handler) tương ứng, thực hiện một phép toán siêu nhỏ rồi lại trả quyền điều khiển về đây
+
+Vậy là giờ phân tích tĩnh đã vô tác dụng, ta phải chuyển sang phân tích động và cho nó chạy liên tục để tìm hiểu tiếp logic của nó. Quay lại GDB vừa nãy và ấn lệnh `c` liên tục đến cuối chương trình, ta sẽ có được luồng thực thi của nó như sau:
+
+<img width="1366" height="534" alt="image" src="https://github.com/user-attachments/assets/9c9f4002-5dd5-4ca7-8f95-44f1f8a44057" />
+<img width="1366" height="529" alt="image" src="https://github.com/user-attachments/assets/94ae5c0e-455d-40dc-92f8-59c18be81dc8" />
+<img width="1366" height="519" alt="image" src="https://github.com/user-attachments/assets/f56899f4-bba3-4619-91f5-4d2434060e55" />
+<img width="1366" height="381" alt="image" src="https://github.com/user-attachments/assets/89702330-b3df-4174-a96f-a6667dfc37a8" />
+<img width="1366" height="491" alt="image" src="https://github.com/user-attachments/assets/35e6afba-d8b9-4e77-823e-41e9791e7933" />
+<img width="1365" height="520" alt="image" src="https://github.com/user-attachments/assets/6f3faf38-0814-47a3-931f-0df21a5e1322" />
+<img width="1366" height="376" alt="image" src="https://github.com/user-attachments/assets/de21f93a-6156-4a0a-88f1-917584b69932" />
+<img width="1366" height="324" alt="image" src="https://github.com/user-attachments/assets/18a7261a-f346-4b37-942b-9c7fcf3b85d9" />
+<img width="1366" height="218" alt="image" src="https://github.com/user-attachments/assets/a8f34d23-36a6-4286-a95e-ed088925d615" />
+
