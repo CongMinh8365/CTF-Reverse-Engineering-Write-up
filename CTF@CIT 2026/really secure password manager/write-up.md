@@ -295,12 +295,41 @@ Thật bất ngờ là đoạn code chỉ ngắn tí tẹo. Và khi phân tích 
 Vậy là giờ phân tích tĩnh đã vô tác dụng, ta phải chuyển sang phân tích động và cho nó chạy liên tục để tìm hiểu tiếp logic của nó. Quay lại GDB vừa nãy và ấn lệnh `c` liên tục đến cuối chương trình, ta sẽ có được luồng thực thi của nó như sau:
 
 <img width="1366" height="534" alt="image" src="https://github.com/user-attachments/assets/9c9f4002-5dd5-4ca7-8f95-44f1f8a44057" />
+&nbsp;
 <img width="1366" height="529" alt="image" src="https://github.com/user-attachments/assets/94ae5c0e-455d-40dc-92f8-59c18be81dc8" />
+&nbsp;
 <img width="1366" height="519" alt="image" src="https://github.com/user-attachments/assets/f56899f4-bba3-4619-91f5-4d2434060e55" />
+&nbsp;
 <img width="1366" height="381" alt="image" src="https://github.com/user-attachments/assets/89702330-b3df-4174-a96f-a6667dfc37a8" />
+&nbsp;
 <img width="1366" height="491" alt="image" src="https://github.com/user-attachments/assets/35e6afba-d8b9-4e77-823e-41e9791e7933" />
+&nbsp;
 <img width="1365" height="520" alt="image" src="https://github.com/user-attachments/assets/6f3faf38-0814-47a3-931f-0df21a5e1322" />
+&nbsp;
 <img width="1366" height="376" alt="image" src="https://github.com/user-attachments/assets/de21f93a-6156-4a0a-88f1-917584b69932" />
+&nbsp;
 <img width="1366" height="324" alt="image" src="https://github.com/user-attachments/assets/18a7261a-f346-4b37-942b-9c7fcf3b85d9" />
+&nbsp;
 <img width="1366" height="218" alt="image" src="https://github.com/user-attachments/assets/a8f34d23-36a6-4286-a95e-ed088925d615" />
+&nbsp;
 
+Chuỗi `hehe` ta nhập vào sau thuật toán hash sẽ sinh ra chuỗi 16 kí tự `NGOr380gHmDeVod7`, sau khí bị vứt sang 1 góc. Tiếp theo chương trình tìm username `doanminh` để kiểm tra tính xác thực (khả năng là `notronnie` nhưng ta đã bypass rồi), sau đó tìm đến thư mục `home/doanminh` và tìm kiếm file `.pm_token` có nội dung là `notronnie_local_token_v1` để tiếp tục xác thực hoặc giải mã gì đó tiếp. Sau đó là 3 ảnh kế tiếp cho ta thấy sự xuất hiện của 1 chuỗi lạ `b7Cvv$K@(6OFGHNR`, chuỗi `NGOr380gHmDeVod7` xuất hiện trở lại và dòng thông báo lỗi `ERROR_NOT_AUTHENTICATED`. Cuối cùng là in ra thông báo lỗi trong menu.
+
+Điều này có nghĩa là gì? Khả năng cao đây là 1 phép so sánh chuỗi, với chuỗi `b7Cvv$K@(6OFGHNR` đã được hardcode trong hệ thống ngay từ đầu, và giờ nó bỏ ra để so sánh với chuỗi hash của ta. Nếu là thật thì mọi thứ đã quá rõ ràng, bước tiếp theo ta chỉ cần thay đổi lại nội dung chuỗi `NGOr380gHmDeVod7` thành `b7Cvv$K@(6OFGHNR` là sẽ vượt qua được.
+
+## Bypass VM Dispatcher
+Ta sẽ chạy lại chương trình từ đầu, nhập `hehe` vào account name, và khi xuất hiện chuỗi hash của nó, ta sẽ đổi thành `b7Cvv$K@(6OFGHNR`:
+
+<img width="1366" height="532" alt="image" src="https://github.com/user-attachments/assets/5ed30553-f486-419c-80bb-8002f10ba4ae" />
+&nbsp;
+<img width="1366" height="524" alt="image" src="https://github.com/user-attachments/assets/9ed664f5-85a9-4aa2-a015-be4bf16e9182" />
+&nbsp;
+
+Tiếp tục cho chạy đến cuối chương trình, ta thấy đã vượt qua được lỗi `ERROR_NOT_AUTHENTICATED`, và bất ngờ hơn là chuỗi in ra chính là Flag:
+
+<img width="1366" height="531" alt="image" src="https://github.com/user-attachments/assets/fac5c833-d4cc-4fd1-8845-ebd34ac7d648" />
+&nbsp;
+<img width="1366" height="211" alt="image" src="https://github.com/user-attachments/assets/63263044-e3c0-4118-87c0-f91f6e709d97" />
+&nbsp;
+
+## Flag: CIT{mT5zpHOlzIG3}
