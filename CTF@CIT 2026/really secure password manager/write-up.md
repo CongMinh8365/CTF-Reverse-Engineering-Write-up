@@ -172,4 +172,69 @@ __int64 __fastcall generatePassword(__int64 a1, __int64 a2)
   return a1;
 }
 ```
-Hàm này nhận input của ta vào và dùng 1 thuật toán hash để ra 1 chuỗi 16 kí tự, sau đó chuỗi này lại được truyền vào hàm `validate`
+Hàm này nhận input của ta vào và dùng 1 thuật toán hash để ra 1 chuỗi 16 kí tự, sau đó chuỗi này lại được truyền vào hàm `validate`:
+```C
+void __fastcall validate()
+{
+  __int64 i; // rbp
+  int v1; // edi
+  _QWORD *v2; // rax
+  __int64 j; // rdx
+  __int64 k; // rbx
+  __int64 v5; // rbp
+  __int64 v6; // [rsp+78h] [rbp-48h]
+
+  __getcallerseflags();
+  v6 = v5;
+  for ( i = 11398436; ; i = 11398436 )
+  {
+    v1 = 32;
+    do
+    {
+      if ( !_InterlockedCompareExchange((volatile signed __int32 *)(i + 211), 1, 0) )
+      {
+        *(_QWORD *)(i + 187) = 0x400000;
+        *(_QWORD *)(i + 243) = 1599713120;
+        *(_QWORD *)(i + 243) ^= 0x5FF1AF60uLL;
+        if ( i == 11398436 )
+        {
+          qword_AA8A48[53] = 32391;
+          *(__int64 *)((char *)&qword_ADEDF8[2] + 7) = 11176944;
+        }
+        *(_QWORD *)(i + 195) = v6 ^ 0x7FD40EA4;
+        *(_QWORD *)(i + 195) ^= 0x7FD40EA4uLL;
+        *(_QWORD *)(i + 178) = 11754253;
+        v2 = qword_ABE200 + 2580;
+        for ( j = *(__int64 *)((char *)qword_ADEDF8 + 3);
+              j != 11267092 && i != 11398436;
+              j = *(__int64 *)((char *)qword_ADEDF8 + 3) )
+        {
+          _mm_pause();
+        }
+        if ( j != 11267092 )
+        {
+          for ( k = 658; k; k = (unsigned int)(k - 1) )
+            *v2++ += 0x400000LL;
+          *(__int64 *)((char *)qword_ADEDF8 + 3) = 11267092;
+        }
+        if ( *(_QWORD *)(i + 215) != 11267092 )
+          *(_QWORD *)(i + 215) = 11267092;
+        __asm { jmp     qword ptr [rax] }
+      }
+      i = i - 0x17BA7A992LL + 0x17BA7AB12LL;
+      --v1;
+    }
+    while ( v1 );
+    _mm_pause();
+  }
+}
+```
+Đến đây ta phát hiện hàm này đã bị Obfuscation bằng Control Flow Flattening. Tuy nhiên đoạn code này ta cũng không cần quan tâm lắm, cái thật sự đáng lưu ý chính là câu lệnh `__asm { jmp     qword ptr [rax]`. Có vẻ như nó sẽ nhảy đến 1 chỗ nào đó để tiếp tục thực thi lệnh
+
+Ok, giờ mục tiêu của ta là cần phải nhảy đến địa chỉ đó để xem rốt cuộc nó sẽ làm gì, tuy nhiên hãy nhớ lại rằng trước đó ta sẽ cần tìm cách biến `notronnie` thành username thực sự để bypass được cái `login`
+
+## Bypass username
+Ta sẽ viết một scripts Python để làm điều này, có 2 cách làm: Hoặc là biến username trên máy thành `notronnie`, hoặc là làm ngược lại. Ta sẽ làm ngược lại, tức là khiến cho chương trình nhìn `notronnie` thành username trên máy ta luôn (ở máy này là `doanminh`). Cách này để khiến mọi thứ trở nên nhất quán, đề phòng chương trình ko chỉ kiểm tra username mà còn có thể kiểm tra các thứ liên quan như loginuid, getuid, geteuid, etc/passwd thì vẫn vượt qua được.   
+
+Scripts Python như sau:
+```python
