@@ -92,7 +92,7 @@ __int64 __fastcall auth()
   return 1;
 }
 ```
-Nó sẽ gọi hàm `getlogin` để lấy username, sau đó so sánh với "notronnie" => Ta đã hiểu vì sao khi chạy chương trình chọn 1 thì nó ko hiện ra gì, đó là do ta ko phải "notronnie", và ta cũng đã biết cách làm cho biến `authenticated` = 1, đó là khiến ta trở thành "notronnie" là được (hoặc ngược lại)   
+Nó sẽ gọi hàm `getlogin` để lấy username, sau đó so sánh với "notronnie" => Ta đã hiểu vì sao khi chạy chương trình chọn 1 thì nó ko hiện ra gì, đó là do ta ko phải "notronnie", và ta cũng đã biết cách làm cho biến `authenticated` = 1, đó là khiến ta trở thành "notronnie" (hoặc ngược lại)   
 
 Tiếp theo nếu chọn 2 (log out) chương trình đơn giản gán `authenticated` = 0, còn chọn 4 thì in ra dòng chữ báo lỗi `ERROR_NOT_AUTHENTICATED`. Nói chung không còn gì để phân tích ở 2 nhánh này.
 
